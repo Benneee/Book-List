@@ -77,7 +77,55 @@ class UI {
   }
 }
 
+// Local Storage Class
+class Store {
+  static getBooks() {
+    let books;
+    books = localStorage.getItem('books') === null ? [] : JSON.parse(localStorage.getItem('books'));
+    return books;
+  }
+
+  static displayBooks() {
+    const books = Store.getBooks();
+
+    // Loop through the books gotten from LS using forEach
+    books.forEach(book => {
+      // Since we already have a class method that adds books to table for us, we instantiate the UI class
+      const ui = new UI();
+
+      // Then summon the method in question and pass in the book object
+      ui.addBookToTable(book);
+    });
+  }
+
+  static addBook(book) {
+    // Initalise the books object and setting it to the variable after getting it from Local Storage
+    const books = Store.getBooks();
+
+    books.push(book);
+
+    // Set the new book entered by user in the LS
+    localStorage.setItem('books', JSON.stringify(books));
+  }
+
+  static removeBook(isbn) {
+    // Since we don't have an id for the book objects, what we can do is to target the isbn
+    // First, we want to get the books back from LS
+    const books = Store.getBooks();
+
+    // Next, we want to loop through the books and ensure the book we want by using splice
+    books.forEach((book, index) => {
+      book.isbn === isbn ? books.splice(index, 1) : null;
+    });
+    localStorage.setItem('books', JSON.stringify(books));
+  }
+}
+
 // Event Listeners
+
+// The event listener to cause all the books to be displayed in the DOM
+// This will be triggered by the DOMLoadEvent and we call the Store method
+document.addEventListener('DOMContentLoaded', Store.displayBooks);
 
 // The addBookToTable event listener
 
@@ -99,7 +147,7 @@ function addBook(e) {
   // Validate form entries/submission
   title === '' || author === '' || isbn === ''
     ? ui.showAlert('Please fill in all fields', 'error')
-    : (ui.addBookToTable(book), ui.showAlert('Book added successfully', 'success'), ui.clearFields());
+    : (ui.addBookToTable(book), Store.addBook(book), ui.showAlert('Book added successfully', 'success'), ui.clearFields());
 
   e.preventDefault();
 }
@@ -116,6 +164,11 @@ function deleteBook(e) {
 
   // Call the class method responsible for the delete action and pass in the target
   ui.deletBook(e.target);
+
+  // Remove book from LS
+  // First thing we want to do is get the book's isbn - that will be our ID for the book
+  let isbn = e.target.parentElement.previousElementSibling.textContent;
+  Store.removeBook(isbn);
 
   // Show an alert for book deletion by calling the class' showAlert method
   ui.showAlert('Book deleted successfully', 'success');
